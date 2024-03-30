@@ -1,7 +1,7 @@
 // Elements
-const startBtn = document.getElementById("mainContent");
+const startBtn = document.getElementById("start");
 const stopBtn = document.getElementById("stopBtn");
-
+let allTabs = []
 // Speech recognition setup
 const SpeechRecognition = window.SpeechRecognition ||
     window.webkitSpeechRecognition;
@@ -18,7 +18,7 @@ recognition.onend = function () {
 };
 
 // Speech recognition result
-recognition.onresult = function (event) {
+recognition.onresult = async function (event) {
     const transcript = event.results[0][0].transcript;
     console.log("Recognized speech:", transcript);
     if (transcript.includes("Hi, Jarvis") ||
@@ -27,17 +27,44 @@ recognition.onresult = function (event) {
         readOut("hello sir");
     }
 
+    if (transcript.includes("Who am I speaking with") ||
+        transcript.includes("who am i speaking with") ||
+        transcript.includes("Who are you")) {
+        readOut("I am Jarvis. I am an advanced artificial intelligence system created by Shree. My name stands for just a rather very intelligent system");
+    }
+
+    if (transcript.includes("Jarvis, what is your purpose") ||
+        transcript.includes("Jarvis what is your purpose") ||
+        transcript.includes("jarvis what is your purpose")) {
+        readOut("As Jarvis, my purpose is to serve as your trusted virtual assistant, just as I did for Tony Stark in the Highland movies. I am here to assist you with various tasks and provide you with information and guidance.");
+    }
+
+    if (transcript.includes("Close all tabs")) {
+        readOut("Closing all tabs sir");
+        allTabs.forEach((index) => {
+            index.close()
+            console.log(index);
+        })
+    }
+
+
     if (transcript.includes("Open YouTube") ||
         transcript.includes("open YouTube") ||
         transcript.includes("open the YouTube") ||
         transcript.includes("Open the YouTube")) {
         readOut("Opening YouTube Sir");
-        window.open("https://www.youtube.com/");
+        let yt = window.open("https://www.youtube.com/");
+        allTabs.push(yt);
+        console.log(allTabs);
     }
+
     if (transcript.includes("Open Google") ||
-        transcript.includes("open the Google")) {
+        transcript.includes("Open the Google")) {
         readOut("Opening Google Sir");
-        window.open("https://www.google.com/")
+        let google = window.open("https://www.google.com/");
+        allTabs.push(google);
+        console.log(allTabs)
+
     }
     if (transcript.includes("Open Firebase")) {
         readOut("Opening Firebase Console");
@@ -58,6 +85,7 @@ recognition.onresult = function (event) {
         transcript.includes("open twitter") ||
         transcript.includes("Open the Twitter") ||
         transcript.includes("open the twitter") ||
+        transcript.includes("open my Twitter") ||
         transcript.includes("open the Twitter")) {
         readOut("Opening Twitter Sir")
         window.open("https://twitter.com/home")
@@ -79,7 +107,12 @@ recognition.onresult = function (event) {
     // google search
     if (transcript.includes("Search for") ||
         transcript.includes("search for")) {
-        readOut("Here's the result");
+        let spokenWords = transcript.split("");
+        spokenWords.splice(0, 11);
+        spokenWords.pop();
+        spokenWords = spokenWords.join("")
+        console.log(spokenWords);
+        readOut(`Here's the result for ${spokenWords}`);
         let input = transcript.split("");
         input.splice(0, 11);
         input.pop();
@@ -87,6 +120,7 @@ recognition.onresult = function (event) {
         console.log(input);
         window.open(`http://google.com/search?q=${input}`)
     }
+
     if (transcript.includes("Play") ||
         transcript.includes("play")) {
         readOut("Here's the result");
@@ -105,7 +139,67 @@ recognition.onresult = function (event) {
         readOut("Opening Spotify Sir");
         window.open("https://open.spotify.com/collection/tracks")
     }
+
+    if (transcript.includes("What is the temperature of") ||
+        transcript.includes("What is the temperature of")) {
+        let temp = transcript.split("");
+        temp.splice(0, 27);
+        temp.pop();
+        temp = temp.join("")
+        console.log(temp);
+
+        const APIKey = '4c2f83ed1109e31605ccaf79fb791e8a';
+        const city = temp
+        console.log(city);
+
+        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${APIKey}`)
+            .then(response => response.json())
+            .then(json => {
+                console.log(json)
+                readOut(`Temperature of ${temp} is ${parseInt(json.main.temp)}°C`);
+            })
+    } else if (transcript.includes("Temperature of") ||
+        transcript.includes("temperature of")) {
+        let temp = transcript.split("");
+        temp.splice(0, 15);
+        temp.pop();
+        temp = temp.join("")
+        console.log(temp);
+
+        const APIKey = '4c2f83ed1109e31605ccaf79fb791e8a';
+        const city = temp
+        console.log(city);
+
+        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${APIKey}`)
+            .then(response => response.json())
+            .then(json => {
+                console.log(json)
+                readOut(`Temperature of ${temp} is ${parseInt(json.main.temp)}°C`);
+            })
+    }
+
+    if (transcript.includes("What is the meaning of")) {
+
+        let meaning = transcript.split("");
+        meaning.splice(0, 22);
+        meaning.pop();
+        meaning = meaning.join("")
+        console.log(meaning);
+
+        const url = "https://api.dictionaryapi.dev/api/v2/entries/en/"
+        const word = meaning;
+        console.log(word);
+
+        fetch(`${url}${word}`)
+            .then((res) => res.json())
+            .then((data) => {
+                console.log(data)
+                readOut(`Meaning of ${meaning} is ${data[0].meanings[0].definitions[0].definition}`)
+            })
+    }
 };
+
+
 
 // speech recognition continuous
 // recognition.continuous = true;
