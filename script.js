@@ -1,11 +1,14 @@
 // Elements
 const startBtn = document.getElementById("start");
 const stopBtn = document.getElementById("stopBtn");
-let allTabs = []
+
+
 // Speech recognition setup
-const SpeechRecognition = window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
 const recognition = new SpeechRecognition();
+// recognition.continuous = true;
+
 
 // Speech recognition start
 recognition.onstart = function () {
@@ -21,10 +24,18 @@ recognition.onend = function () {
 recognition.onresult = async function (event) {
     const transcript = event.results[0][0].transcript;
     console.log("Recognized speech:", transcript);
+
     if (transcript.includes("Hi, Jarvis") ||
         transcript.includes("Hello, Jarvis") ||
         transcript.includes("hi Jarvis")) {
         readOut("hello sir");
+    }
+
+    //shut down jarvis
+    if (transcript.includes("shut down") ||
+        transcript.includes("Shut down")) {
+        readOut("Ok sir , shutting down...");
+        recognition.stop()
     }
 
     if (transcript.includes("Who am I speaking with") ||
@@ -37,14 +48,6 @@ recognition.onresult = async function (event) {
         transcript.includes("Jarvis what is your purpose") ||
         transcript.includes("jarvis what is your purpose")) {
         readOut("As Jarvis, my purpose is to serve as your trusted virtual assistant, just as I did for Tony Stark in the Highland movies. I am here to assist you with various tasks and provide you with information and guidance.");
-    }
-
-    if (transcript.includes("Close all tabs")) {
-        readOut("Closing all tabs sir");
-        allTabs.forEach((index) => {
-            index.close()
-            console.log(index);
-        })
     }
 
 
@@ -104,6 +107,14 @@ recognition.onresult = async function (event) {
         window.open("https://github.com/shreejaybhay")
     }
 
+    if (transcript.includes("Open Spotify") ||
+        transcript.includes("open Spotify") ||
+        transcript.includes("open spotify")
+    ) {
+        readOut("Opening Spotify Sir");
+        window.open("https://open.spotify.com/collection/tracks")
+    }
+
     // google search
     if (transcript.includes("Search for") ||
         transcript.includes("search for")) {
@@ -132,14 +143,8 @@ recognition.onresult = async function (event) {
         window.open(`https://www.youtube.com/results?search_query=${input}`)
     }
 
-    if (transcript.includes("Open Spotify") ||
-        transcript.includes("open Spotify") ||
-        transcript.includes("open spotify")
-    ) {
-        readOut("Opening Spotify Sir");
-        window.open("https://open.spotify.com/collection/tracks")
-    }
 
+    // temperature
     if (transcript.includes("What is the temperature of") ||
         transcript.includes("What is the temperature of")) {
         let temp = transcript.split("");
@@ -156,7 +161,11 @@ recognition.onresult = async function (event) {
             .then(response => response.json())
             .then(json => {
                 console.log(json)
-                readOut(`Temperature of ${temp} is ${parseInt(json.main.temp)}°C`);
+                if (json.main && json.main.temp !== undefined) {
+                    readOut(`Temperature of ${temp} is ${parseInt(json.main.temp)}°C`);
+                } else {
+                    readOut(`Temperature information not available for ${temp}`);
+                }
             })
     } else if (transcript.includes("Temperature of") ||
         transcript.includes("temperature of")) {
@@ -174,10 +183,15 @@ recognition.onresult = async function (event) {
             .then(response => response.json())
             .then(json => {
                 console.log(json)
-                readOut(`Temperature of ${temp} is ${parseInt(json.main.temp)}°C`);
+                if (json.main && json.main.temp !== undefined) {
+                    readOut(`Temperature of ${temp} is ${parseInt(json.main.temp)}°C`);
+                } else {
+                    readOut(`Temperature information not available for ${temp}`);
+                }
             })
     }
 
+    // meaning of any words
     if (transcript.includes("What is the meaning of")) {
 
         let meaning = transcript.split("");
@@ -194,15 +208,155 @@ recognition.onresult = async function (event) {
             .then((res) => res.json())
             .then((data) => {
                 console.log(data)
-                readOut(`Meaning of ${meaning} is ${data[0].meanings[0].definitions[0].definition}`)
+                if (data.length > 0 && data[0].meanings && data[0].meanings.length > 0 && data[0].meanings[0].definitions && data[0].meanings[0].definitions.length > 0) {
+                    readOut(`Meaning of ${meaning} is ${data[0].meanings[0].definitions[0].definition}`)
+                } else {
+                    readOut("we couldn't find Meaning or definitions for the word you were looking for.")
+                }
             })
     }
+    if (transcript.includes("Meaning of")) {
+
+        let meaning = transcript.split("");
+        meaning.splice(0, 10);
+        meaning.pop();
+        meaning = meaning.join("")
+        console.log(meaning);
+
+        const url = "https://api.dictionaryapi.dev/api/v2/entries/en/"
+        const word = meaning;
+        console.log(word);
+
+        fetch(`${url}${word}`)
+            .then((res) => res.json())
+            .then((data) => {
+                console.log(data)
+                if (data.length > 0 && data[0].meanings && data[0].meanings.length > 0 && data[0].meanings[0].definitions && data[0].meanings[0].definitions.length > 0) {
+                    readOut(`Meaning of ${meaning} is ${data[0].meanings[0].definitions[0].definition}`)
+                } else {
+                    readOut("we couldn't find Meaning or definitions for the word you were looking for.")
+                }
+            })
+    }
+
+    //News API
+
+    const apiKey = '13e26222ea394b58a33acde7ee012983'; // Replace 'YOUR_API_KEY' with your actual NewsAPI key
+
+    const fetchNews = async (category) => {
+        const url = `https://newsapi.org/v2/top-headlines?country=in&category=${category}&apiKey=${apiKey}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            console.log(data);
+            if (data.status === 'ok') {
+                const articles = data.articles;
+
+                let newsIndex = 0; // Track the current index of the news article
+
+                const readNextNews = () => {
+                    if (newsIndex < articles.length) {
+                        console.log(articles.length);
+                        const currentArticle = articles[newsIndex];
+                        // readOut(currentArticle.title);
+                        readOut(currentArticle.description);
+
+                        // Ask if the user wants to hear the next news
+                        readOut("Sir, do you want to hear the next news?");
+                    } else {
+                        readOut("No more news available.");
+                    }
+                };
+
+                readNextNews(); // Read the first news article
+
+                recognition.onresult = async function (event) {
+                    const transcript = event.results[0][0].transcript;
+                    console.log(transcript);
+                    if (transcript.includes("Yes")) {
+                        newsIndex++; // Move to the next news article
+                        readNextNews(); // Read the next news article
+                    } else if (transcript.includes("No")) {
+                        readOut("OK, sir.");
+                        // Force a hard reload to clear the cache if supported by the browser
+                        window.location.reload(true);
+                    }
+                };
+            } else {
+                console.log("Failed to fetch news data.");
+            }
+        } catch (error) {
+            console.error("Error fetching news:", error);
+        }
+    };
+    if (
+        transcript.includes("Top business headlines in the India right now") || transcript.includes("Business news") || transcript.includes("business news")) {
+        fetchNews("business");
+    } else if (transcript.includes("Technology news") || transcript.includes("technology news")) {
+        fetchNews("technology");
+    } else if (transcript.includes("Sports News") || transcript.includes("sports news")) {
+        fetchNews("sports");
+    } else if (transcript.includes("Today's headline") || transcript.includes("Today's news")) {
+        fetchNews("general");
+    }
+
+    // joke api 
+    if (transcript.includes("Tell me a joke")) {
+        const jokeApiBaseUrl = 'https://v2.jokeapi.dev/joke/Any?';
+
+        let getJoke = () => {
+            fetch(jokeApiBaseUrl)
+                .then(jokeResponse => jokeResponse.json())
+                .then(jokedata => {
+                    console.log(jokedata);
+                    console.log(jokedata.joke);
+                    console.log(jokedata.setup);
+                    console.log(jokedata.delivery);
+                    if (jokedata.joke === undefined) {
+                        readOut(jokedata.setup)
+                        readOut(jokedata.delivery)
+                        readOut("Sir, do you want to hear one more joke?")
+                    } else {
+                        readOut(jokedata.joke)
+                        readOut("Sir, do you want to hear one more joke?")
+                    }
+
+                    recognition.onresult = async function (event) {
+                        const transcript = event.results[0][0].transcript;
+                        console.log(transcript);
+                        if (transcript.includes("Yes")) {
+                            readOut("Sir, do you want to change the category of the joke?")
+                            recognition.onresult = async function (event) {
+                                const transcript = event.results[0][0].transcript;
+                                console.log(transcript);
+
+                                if (transcript.includes("Yes")) {
+                                    readOut("Here are some categories like programming, spooky, dark");
+                                    recognition.onresult = async function (eventCategory) {
+                                        const categoryTranscript = eventCategory.results[0][0].transcript;
+                                        console.log(categoryTranscript);
+                                    }
+                                } else if (transcript.includes("No")) {
+                                    readOut("Okay sir here is another joke.")
+                                    getJoke()
+                                }
+                            }
+
+                        } else if (transcript.includes("No")) {
+                            readOut("OK, sir.");
+                        }
+                    };
+
+
+                })
+        }
+        getJoke()
+    }
+
 };
 
-
-
-// speech recognition continuous
-// recognition.continuous = true;
 
 // Event listeners
 startBtn.addEventListener("click", () => {
@@ -212,7 +366,6 @@ startBtn.addEventListener("click", () => {
 stopBtn.addEventListener("click", () => {
     recognition.stop();
 });
-
 
 function readOut(message) {
     const speech = new SpeechSynthesisUtterance()
